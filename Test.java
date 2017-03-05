@@ -53,7 +53,13 @@ public class Test{
 
 		MCSClassifier MCS = new MCSClassifier(classifiers, (ArrayList<AbstractDiversityMeasure>) null, 60, (AbstractClassifier)null);
 
-		MCS.buildClassifier(instances);
+		ArrayList<AbstractClassifier> classifiers2 = new ArrayList<AbstractClassifier>();
+		classifiers2.add(MCS);
+		classifiers2.add(new LMT());
+
+		MCSClassifier MCS2 = new MCSClassifier(classifiers2, (ArrayList<AbstractDiversityMeasure>) null, 60, new J48());
+
+		MCS2.buildClassifier(instances);
 
 		for(i=0;i<testPaths.length;i++){
 			source = new DataSource(testPaths[i]);
@@ -64,9 +70,9 @@ public class Test{
 
 		MultipleFeatureInstances testInstances = new MultipleFeatureInstances(testData);
 
-		r = MCS.classifyInstance(testInstances.instance(5));
+		r = MCS2.classifyInstance(testInstances.instance(5));
 
 		//for(i=0;i<r.length;i++)
-			System.out.println(r + "\n");
+			System.out.println(testInstances.classAttribute().value((int)r));
 	}
 }

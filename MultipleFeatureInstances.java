@@ -35,7 +35,7 @@ public class MultipleFeatureInstances extends Instances{
 		feature = 0;
 	}
 
-	public ArrayList<Instances> FeaturesToArray(){
+	public ArrayList<Instances> featuresToArray(){
 		return set;
 	}
 
@@ -188,7 +188,7 @@ public class MultipleFeatureInstances extends Instances{
 			array.add((AbstractInstance)set.get(i).instance(index));
 		}
 		MultipleFeatureInstance r = new MultipleFeatureInstance(array);
-		r.selectFeature(index);
+		r.selectFeature(feature);
 		return r;
 	}
 	public double kthSmallestValue(Attribute att, int k){

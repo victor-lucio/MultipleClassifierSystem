@@ -25,7 +25,7 @@ import java.util.Enumeration;
 
 public class MCSClassifier extends MultipleClassifiersCombiner{
 	
-	private int percent; //porcentagem do dataSet para treino
+	private int percent; //porcentagem do dataset para treino
 	private int numberClassifiers;
 	private AbstractClassifier fusionClassifier;
 	private ArrayList<AbstractClassifier> classifiers;
@@ -48,11 +48,24 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 
 	@Override
 	public void buildClassifier(Instances data) throws Exception{
-		int i,j,k;
-		MultipleFeatureInstances dataset = (MultipleFeatureInstances) data;
-		dataset.selectFeature(0);
+		int i,j,k,nof;
+		MultipleFeatureInstances dataset;
+		if(data instanceof MultipleFeatureInstances){
+			//System.out.println("instancia do multiple!!");
+			dataset = (MultipleFeatureInstances) data;
+			dataset.selectFeature(0);
+			nof = dataset.numberOfFeatures();
+		}else{
+			//System.out.println("nao eh multiple!!");
+			ArrayList<Instances> aux = new ArrayList<Instances>();
+			aux.add(data);
+			dataset = new MultipleFeatureInstances(aux);
+			dataset.selectFeature(0);
+			aux = null;
+			nof = 1;
+		}
 
-		for(i=0;i<dataset.numberOfFeatures()-1;i++){ //constrói o array list com todas combinações de classificadores
+		for(i=0;i<nof-1;i++){ //constrói o array list com todas combinações de classificadores
             for(j=0;j<numberClassifiers;j++){
                 try{
                     classifiers.add(instanceBuilder(classifiers.get(j)));
@@ -65,87 +78,110 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
         }
 
 		//dividir treino e validação
-		ArrayList<Instances> train = new ArrayList<Instances>(), validate = new ArrayList<Instances>();
-		RemovePercentage removep = new RemovePercentage();
+		ArrayList<Instances> train, validate;
 
-		for(i=0;i<dataset.numberOfFeatures();i++){
-			removep.setInputFormat(dataset.getFeature(i));
-			removep.setPercentage(percent);
-			train.add(Filter.useFilter(dataset.getFeature(i), removep));
+		if(fusionClassifier != null){
+
+			RemovePercentage removeptrain = new RemovePercentage();
+			RemovePercentage removepval = new RemovePercentage();
+
+			train = new ArrayList<Instances>();
+			validate = new ArrayList<Instances>();
+
+			for(i=0;i<nof;i++){
+				removeptrain.setInputFormat(dataset.getFeature(i));
+				removeptrain.setPercentage(percent);
+				removeptrain.setInvertSelection(true);
+				train.add(Filter.useFilter(dataset.getFeature(i), removeptrain));
+			}
+			//System.out.println(train.get(0) + "\n" + "----------\n" + train.get(0).size() + "\n");
+
+			for(i=0;i<nof;i++){
+				removepval.setInputFormat(dataset.getFeature(i));
+				removepval.setPercentage(percent);
+				validate.add(Filter.useFilter(dataset.getFeature(i), removepval));
+			}
+			//System.out.println(validate.get(0) + "\n" + "----------\n" + validate.get(0).size() );
+		}else{
+			train = dataset.featuresToArray();
+			validate = null;
 		}
-
-		for(i=0;i<dataset.numberOfFeatures();i++){
-			removep.setInputFormat(dataset.getFeature(i));
-			removep.setPercentage((100-percent));
-			removep.setInvertSelection(true);
-			validate.add(Filter.useFilter(dataset.getFeature(i), removep));
-		}
-
+		
 		//treinar classificadores
 		k=0;
-		for(i=0;i<dataset.numberOfFeatures();i++){
+		for(i=0;i<nof;i++){
 			for(j=0;j<numberClassifiers;j++,k++){
 				classifiers.get(k).buildClassifier(train.get(i));
 			}
 		}
 
 		//montar matriz
-		ArrayList<ArrayList<Double>> matrixV = new ArrayList<ArrayList<Double>>();   //inicialização da matriz
-        for(i=0;i<classifiers.size();i++)
-			matrixV.add(new ArrayList<Double>());
- 		
- 		int cont = 0;
-        j = 0;
-        for(i=0;i<classifiers.size();i++, cont++){
-			if(cont == numberClassifiers){
-                j++;
-                cont = 0;
-			}
-			for(k=0;k<validate.get(j).size();k++){
-				matrixV.get(i).add(classifiers.get(i).classifyInstance(validate.get(j).instance(k)));
-			}
-        }
-
-        // criando instancias para treinar o segundo classificador
-        double[] instanceValue;
+		
         if(fusionClassifier != null){
+			ArrayList<ArrayList<Double>> matrixV = new ArrayList<ArrayList<Double>>();   //inicialização da matriz
+	        for(i=0;i<classifiers.size();i++)
+				matrixV.add(new ArrayList<Double>());
+	 		
+	 		int cont = 0;
+	        j = 0;
+	        for(i=0;i<classifiers.size();i++, cont++){
+				if(cont == numberClassifiers){
+	                j++;
+	                cont = 0;
+				}
+				for(k=0;k<validate.get(j).size();k++){
+					matrixV.get(i).add(classifiers.get(i).classifyInstance(validate.get(j).instance(k)));
+				}
+	        }
+
+	        // criando instancias para treinar o segundo classificador
+	        double[] instanceValue;
         	attributes = new ArrayList<Attribute>();
     		instanceValue = new double[classifiers.size() + 1];
     		Instances data2;
     		for(i=0;i<classifiers.size();i++)
 	    		attributes.add(new Attribute("classifier "+i));
-	    	attributes.add(dataset.get(0).classAttribute());
-	    	data2 = new Instances("validation dataset", attributes, 0);
+	    	attributes.add(validate.get(0).classAttribute());
+	    	data2 = new Instances("validation dataset", attributes, matrixV.get(0).size());
 
-    		for(i=0;i<dataset.size();i++){
+	    	DenseInstance inst;
+    		for(i=0;i<matrixV.get(0).size();i++){
+    			inst = new DenseInstance(classifiers.size() + 1);
 	        	for(j=0;j<classifiers.size();j++){ //Are numerical
-	    			instanceValue[j] = matrixV.get(j).get(i);
+	    			inst.setValue(j, matrixV.get(j).get(i));
 	        	}
-	        	instanceValue[j] = dataset.instance(i).classValue(); //classvalue of each instance
-	        	data2.add(new DenseInstance(1, instanceValue));
+	        	inst.setValue(j, validate.get(0).instance(i).classValue()); //classvalue of each instance
+	        	data2.add(inst);
+	        	inst = null;
 	        }
-        	
+        	data2.setClassIndex(data2.numAttributes()-1);
         	fusionClassifier.buildClassifier(data2);
+        	//System.out.println(data2);
         }
 	}
 
 	@Override
 	public double classifyInstance(Instance instance) throws Exception { //no singular, é o padrão da classe abstrata
 		
-		MultipleFeatureInstance multInst = (MultipleFeatureInstance) instance;
+		MultipleFeatureInstance multiInst;
 		double classVal = 0; // representação da predição em forma de double
 		ArrayList<AbstractInstance> instanceArray;
-		double classArray[] = new double[classifiers.size()];
+		double classArray[] = new double[classifiers.size() + 1];
 		int i, j, k = 0;
-
-		instanceArray = multInst.toArray();
+		if(instance instanceof MultipleFeatureInstance){
+			multiInst = (MultipleFeatureInstance) instance;
+			instanceArray = multiInst.toArray();
+		}else{
+			instanceArray = new ArrayList<AbstractInstance>();
+			instanceArray.add((AbstractInstance) instance);
+		}
 		for(i=0;i<instanceArray.size();i++){
 			for(j=0;j<numberClassifiers;j++,k++){
 				classArray[k] = (classifiers.get(k).classifyInstance(instanceArray.get(i)));
-				//System.out.println(classArray[k]);
+				//System.out.print(classArray[k] + " ");
 			}
 		}
-		//System.out.println("---------");
+		//System.out.println("\n---------");
 
 		if(fusionClassifier == null){ 						//majority using hashmap counting
 			
@@ -170,21 +206,24 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
         	classVal = max;
 
 		}else{ 		
-															//fusion classifier
+			Instances fusionInstances;												//fusion classifier
 			DenseInstance fusionInstance = new DenseInstance(1, classArray);
-			classVal = fusionClassifier.classifyInstance(fusionInstance);
-		
+			fusionInstances = new Instances("fusion instance", attributes, 0);
+			fusionInstances.add(fusionInstance);
+			fusionInstances.setClassIndex(fusionInstance.numAttributes()-1);
+			classVal = fusionClassifier.classifyInstance(fusionInstances.instance(0));
+			fusionInstances = null;
+			fusionInstance = null;
 		}
 		
 		return classVal;
 	}
 
 	public double[] classifyInstances(Instances instances) throws Exception{ //no plural, classifica um set de instancias
-		MultipleFeatureInstances multiInst = (MultipleFeatureInstances) instances;
-		double[] r = new double[multiInst.size()];
+		double[] r = new double[instances.size()];
 		int i;
-		for(i=0;i<multiInst.size();i++){
-			r[i] = classifyInstance(multiInst.instance(i));
+		for(i=0;i<instances.size();i++){
+			r[i] = classifyInstance(instances.instance(i));
 		}
 		return r;
 	}
