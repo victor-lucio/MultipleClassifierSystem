@@ -12,10 +12,8 @@ import weka.core.*;
 import weka.core.Capabilities.Capability;
 import weka.filters.unsupervised.instance.RemovePercentage;
 import weka.filters.Filter;
+import weka.filters.unsupervised.instance.Randomize;
 import java.util.*;
-import weka.classifiers.bayes.*;
-import weka.classifiers.lazy.*;
-import weka.classifiers.trees.*;
 import java.awt.image.BufferedImage;
 import java.lang.Iterable;
 import java.nio.file.*;
@@ -27,19 +25,25 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 	
 	private int percent; //porcentagem do dataset para treino
 	private int numberClassifiers;
+	private int selectedNumber;
 	private AbstractClassifier fusionClassifier;
 	private ArrayList<AbstractClassifier> classifiers;
 	private ArrayList<ArrayList<Double>> matrixV;
-	private ArrayList<AbstractDiversityMeasure> diversityMeasures;
+	private AbstractClassifierSelection selectionMethod;
+	private AbstractInstanceBasedSelection selectionMethodCasted;
     private ArrayList<Attribute> attributes;
+    private Boolean[] selected;
+    private ArrayList<AbstractClassifier> selectedClassifiers;
 
-	public MCSClassifier(ArrayList<AbstractClassifier> classifiers, ArrayList<AbstractDiversityMeasure> diversityMeasures,
+	public MCSClassifier(ArrayList<AbstractClassifier> classifiers, AbstractClassifierSelection selectionMethod,
 						 int validationPercentage, AbstractClassifier fusionClassifier) throws Exception{
 		this.classifiers = classifiers;
 		numberClassifiers = classifiers.size();
-		this.diversityMeasures = diversityMeasures;
+		this.selectionMethod = selectionMethod;
 		this.percent = validationPercentage;
 		this.fusionClassifier = fusionClassifier;
+		if(selectionMethod instanceof AbstractInstanceBasedSelection)
+			selectionMethodCasted = (AbstractInstanceBasedSelection) selectionMethod;
 	}
 
 	private AbstractClassifier instanceBuilder(AbstractClassifier cls) throws InstantiationException, IllegalAccessException, Exception{
@@ -50,13 +54,12 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 	public void buildClassifier(Instances data) throws Exception{
 		int i,j,k,nof;
 		MultipleFeatureInstances dataset;
+
 		if(data instanceof MultipleFeatureInstances){
-			//System.out.println("instancia do multiple!!");
 			dataset = (MultipleFeatureInstances) data;
 			dataset.selectFeature(0);
 			nof = dataset.numberOfFeatures();
 		}else{
-			//System.out.println("nao eh multiple!!");
 			ArrayList<Instances> aux = new ArrayList<Instances>();
 			aux.add(data);
 			dataset = new MultipleFeatureInstances(aux);
@@ -76,6 +79,13 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
                 }
             }
         }
+
+        //randomize instances
+        for(i=0;i<dataset.numberOfFeatures();i++){
+        	dataset.selectFeature(i);
+        	dataset.randomize(new Random(1));
+        }
+        dataset.selectFeature(0);
 
 		//dividir treino e validação
 		ArrayList<Instances> train, validate;
@@ -115,48 +125,71 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 			}
 		}
 
-		//montar matriz
-		
+		//selecionar classificadores
+		if(selectionMethod instanceof AbstractInstanceBasedSelection){
+			selectionMethodCasted.setClassifiers(classifiers);
+			selectionMethodCasted.setInstances(validate);
+			selected = selectionMethodCasted.select();
+		}else if(selectionMethod == null){
+			selected = new Boolean[classifiers.size()];
+			Arrays.fill(selected, true);
+		}else{
+			selectionMethod.setClassifiers(classifiers);
+			selected = selectionMethod.select();
+		}
+
+		selectedNumber = 0;
+		for(i=0;i<classifiers.size();i++){
+			if(selected[i]){
+				selectedNumber++;		
+			}
+		}
+
+		//montar matriz	
+    	Instances validationInstances;	//validation
         if(fusionClassifier != null){
+
 			ArrayList<ArrayList<Double>> matrixV = new ArrayList<ArrayList<Double>>();   //inicialização da matriz
-	        for(i=0;i<classifiers.size();i++)
+	        for(i=0;i<selectedNumber;i++)
 				matrixV.add(new ArrayList<Double>());
 	 		
-	 		int cont = 0;
+	 		int contC = 0;
 	        j = 0;
-	        for(i=0;i<classifiers.size();i++, cont++){
-				if(cont == numberClassifiers){
+	        for(i=0;i<classifiers.size();i++){
+				if(i % numberClassifiers == 0)
 	                j++;
-	                cont = 0;
-				}
-				for(k=0;k<validate.get(j).size();k++){
-					matrixV.get(i).add(classifiers.get(i).classifyInstance(validate.get(j).instance(k)));
+
+				if(selected[i]){
+					for(k=0;k<validate.get(j).size();k++){
+						matrixV.get(contC).add(classifiers.get(i).classifyInstance(validate.get(j).instance(k)));
+					}
+					contC++;
 				}
 	        }
 
 	        // criando instancias para treinar o segundo classificador
 	        double[] instanceValue;
         	attributes = new ArrayList<Attribute>();
-    		instanceValue = new double[classifiers.size() + 1];
-    		Instances data2;
+    		instanceValue = new double[selectedNumber + 1];
     		for(i=0;i<classifiers.size();i++)
-	    		attributes.add(new Attribute("classifier "+i));
+    			if(selected[i])
+	    			attributes.add(new Attribute("classifier "+i));
 	    	attributes.add(validate.get(0).classAttribute());
-	    	data2 = new Instances("validation dataset", attributes, matrixV.get(0).size());
+	    	validationInstances = new Instances("validation dataset", attributes, matrixV.get(0).size());
 
 	    	DenseInstance inst;
     		for(i=0;i<matrixV.get(0).size();i++){
-    			inst = new DenseInstance(classifiers.size() + 1);
-	        	for(j=0;j<classifiers.size();j++){ //Are numerical
+    			inst = new DenseInstance(selectedNumber + 1);
+	        	for(j=0;j<selectedNumber;j++){ //Are numerical
 	    			inst.setValue(j, matrixV.get(j).get(i));
 	        	}
 	        	inst.setValue(j, validate.get(0).instance(i).classValue()); //classvalue of each instance
-	        	data2.add(inst);
+	        	validationInstances.add(inst);
 	        	inst = null;
 	        }
-        	data2.setClassIndex(data2.numAttributes()-1);
-        	fusionClassifier.buildClassifier(data2);
-        	//System.out.println(data2);
+        	validationInstances.setClassIndex(validationInstances.numAttributes()-1);
+        	fusionClassifier.buildClassifier(validationInstances);
+        	//System.out.println(validationInstances);
         }
 	}
 
@@ -166,8 +199,10 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 		MultipleFeatureInstance multiInst;
 		double classVal = 0; // representação da predição em forma de double
 		ArrayList<AbstractInstance> instanceArray;
-		double classArray[] = new double[classifiers.size() + 1];
-		int i, j, k = 0;
+		double classArray[] = new double[selectedNumber + 1];
+		int i, j, k = 0, contC;
+		Instances fusionInstances;
+
 		if(instance instanceof MultipleFeatureInstance){
 			multiInst = (MultipleFeatureInstance) instance;
 			instanceArray = multiInst.toArray();
@@ -175,13 +210,18 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 			instanceArray = new ArrayList<AbstractInstance>();
 			instanceArray.add((AbstractInstance) instance);
 		}
-		for(i=0;i<instanceArray.size();i++){
-			for(j=0;j<numberClassifiers;j++,k++){
-				classArray[k] = (classifiers.get(k).classifyInstance(instanceArray.get(i)));
-				//System.out.print(classArray[k] + " ");
+
+		j = 0;
+		contC = 0;
+		for(i=0;i<classifiers.size();i++){
+			if(i % numberClassifiers == 0)
+	            j++;
+
+			if(selected[i]){
+				classArray[contC] = classifiers.get(i).classifyInstance(instanceArray.get(j));
+				contC++;
 			}
-		}
-		//System.out.println("\n---------");
+	    }
 
 		if(fusionClassifier == null){ 						//majority using hashmap counting
 			
@@ -205,8 +245,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
         	}
         	classVal = max;
 
-		}else{ 		
-			Instances fusionInstances;												//fusion classifier
+		}else{ 
 			DenseInstance fusionInstance = new DenseInstance(1, classArray);
 			fusionInstances = new Instances("fusion instance", attributes, 0);
 			fusionInstances.add(fusionInstance);
