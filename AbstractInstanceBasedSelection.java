@@ -24,7 +24,7 @@ public abstract class AbstractInstanceBasedSelection extends AbstractClassifierS
 		classifiers = null;
 	}
 
-	public abstract Boolean[] select() throws Exception;
+	public abstract ArrayList<Boolean> select() throws Exception;
 
 	public void setClassifiers(ArrayList<AbstractClassifier> classifiers){
 		this.classifiers = classifiers;

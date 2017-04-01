@@ -7,8 +7,10 @@
 	from: Faria, Fabio "A Framework for Pattern Classifier Selection and Fusion", 2014
 */
 
+import java.util.*;
+
 public interface SelectionMethod{
 
-	public Boolean[] select() throws Exception;
+	public ArrayList<Boolean> select() throws Exception;
 
 }

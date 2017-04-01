@@ -13,7 +13,7 @@ import java.util.*;
 
 public abstract class AbstractClassifierSelection implements SelectionMethod{
 
-	public abstract Boolean[] select() throws Exception;
+	public abstract ArrayList<Boolean> select() throws Exception;
 
 	public abstract void setClassifiers(ArrayList<AbstractClassifier> classifiers);
 

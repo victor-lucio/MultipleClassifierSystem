@@ -32,7 +32,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 	private AbstractClassifierSelection selectionMethod;
 	private AbstractInstanceBasedSelection selectionMethodCasted;
     private ArrayList<Attribute> attributes;
-    private Boolean[] selected;
+    private ArrayList<Boolean> selected;
     private ArrayList<AbstractClassifier> selectedClassifiers;
 
 	public MCSClassifier(ArrayList<AbstractClassifier> classifiers, AbstractClassifierSelection selectionMethod,
@@ -131,8 +131,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 			selectionMethodCasted.setInstances(validate);
 			selected = selectionMethodCasted.select();
 		}else if(selectionMethod == null){
-			selected = new Boolean[classifiers.size()];
-			Arrays.fill(selected, true);
+			selected = new ArrayList<Boolean>(Collections.nCopies(classifiers.size(), true));
 		}else{
 			selectionMethod.setClassifiers(classifiers);
 			selected = selectionMethod.select();
@@ -140,7 +139,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 
 		selectedNumber = 0;
 		for(i=0;i<classifiers.size();i++){
-			if(selected[i]){
+			if(selected.get(i)){
 				selectedNumber++;		
 			}
 		}
@@ -159,7 +158,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 				if(i % numberClassifiers == 0)
 	                j++;
 
-				if(selected[i]){
+				if(selected.get(i)){
 					for(k=0;k<validate.get(j).size();k++){
 						matrixV.get(contC).add(classifiers.get(i).classifyInstance(validate.get(j).instance(k)));
 					}
@@ -172,7 +171,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
         	attributes = new ArrayList<Attribute>();
     		instanceValue = new double[selectedNumber + 1];
     		for(i=0;i<classifiers.size();i++)
-    			if(selected[i])
+    			if(selected.get(i))
 	    			attributes.add(new Attribute("classifier "+i));
 	    	attributes.add(validate.get(0).classAttribute());
 	    	validationInstances = new Instances("validation dataset", attributes, matrixV.get(0).size());
@@ -217,7 +216,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 			if(i % numberClassifiers == 0)
 	            j++;
 
-			if(selected[i]){
+			if(selected.get(i)){
 				classArray[contC] = classifiers.get(i).classifyInstance(instanceArray.get(j));
 				contC++;
 			}

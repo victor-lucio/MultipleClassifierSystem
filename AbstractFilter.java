@@ -9,14 +9,11 @@
 
 import java.util.*;
 
-public class IndexSort<T extends Comparable> implements Comparator<Integer>{
-	private ArrayList<T> array;
+public abstract class AbstractFilter<T>{
 
-	public IndexSort(ArrayList<T> array){
-		this.array = array;
+	public AbstractFilter(){
+	
 	}
 
-	public int compare(Integer o1, Integer o2) {
-		return (array.get(o1).compareTo(array.get(o2)));
-	}
+	public abstract ArrayList<T> filtrate(ArrayList<T> in); // como comparar?
 }
