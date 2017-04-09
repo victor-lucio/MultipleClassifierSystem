@@ -9,7 +9,7 @@
 
 import java.util.*;
 
-public class Threshold<T extends Comparable> extends AbstractSelectionMethod<T>{
+public class Threshold<T extends Comparable<T>> extends GenericSelectionMethod<T>{
 
 	private T t;
 	private ArrayList<Boolean> out;

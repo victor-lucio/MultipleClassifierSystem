@@ -90,7 +90,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 		//dividir treino e validação
 		ArrayList<Instances> train, validate;
 
-		if(fusionClassifier != null){
+		if(fusionClassifier != null || (selectionMethod instanceof AbstractInstanceBasedSelection)){
 
 			RemovePercentage removeptrain = new RemovePercentage();
 			RemovePercentage removepval = new RemovePercentage();
@@ -128,7 +128,9 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 		//selecionar classificadores
 		if(selectionMethod instanceof AbstractInstanceBasedSelection){
 			selectionMethodCasted.setClassifiers(classifiers);
+			//System.out.println(classifiers.size());
 			selectionMethodCasted.setInstances(validate);
+			//System.out.println(validate.size());
 			selected = selectionMethodCasted.select();
 		}else if(selectionMethod == null){
 			selected = new ArrayList<Boolean>(Collections.nCopies(classifiers.size(), true));
@@ -155,15 +157,16 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 	 		int contC = 0;
 	        j = 0;
 	        for(i=0;i<classifiers.size();i++){
-				if(i % numberClassifiers == 0)
-	                j++;
-
+			
 				if(selected.get(i)){
 					for(k=0;k<validate.get(j).size();k++){
 						matrixV.get(contC).add(classifiers.get(i).classifyInstance(validate.get(j).instance(k)));
 					}
 					contC++;
 				}
+
+				if((i+1) % numberClassifiers == 0)
+	                j++;
 	        }
 
 	        // criando instancias para treinar o segundo classificador
@@ -213,13 +216,14 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 		j = 0;
 		contC = 0;
 		for(i=0;i<classifiers.size();i++){
-			if(i % numberClassifiers == 0)
-	            j++;
 
 			if(selected.get(i)){
 				classArray[contC] = classifiers.get(i).classifyInstance(instanceArray.get(j));
 				contC++;
 			}
+
+			if((i+1) % numberClassifiers == 0)
+	            j++;
 	    }
 
 		if(fusionClassifier == null){ 						//majority using hashmap counting

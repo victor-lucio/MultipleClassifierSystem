@@ -43,13 +43,11 @@ public class Concensus extends AbstractInstanceBasedSelection{
 	    int i, contC = 0, j = 0, k;
 
 	    baseClassifiersSize = classifiers.size()/instancesArray.size();
+	    //System.out.println(baseClassifiersSize);
 	    for(i=0;i<classifiers.size();i++)
 			matrixV.add(new ArrayList<Boolean>());
 
 	    for(i=0;i<classifiers.size();i++){
-			if(i % baseClassifiersSize == 0)
-	            j++;
-
 			for(k=0;k<instancesArray.get(j).size();k++){
 				if((classifiers.get(i).classifyInstance(instancesArray.get(j).instance(k))) == instancesArray.get(j).instance(k).classValue())
 					matrixV.get(i).add(true);
@@ -57,7 +55,10 @@ public class Concensus extends AbstractInstanceBasedSelection{
 					matrixV.get(i).add(false);
 				}
 			}
-	    }
+
+			if((i+1) % baseClassifiersSize == 0)
+	            j++;
+	    }	    
 	}
 
 	private void diversityCombination(){
@@ -99,16 +100,25 @@ public class Concensus extends AbstractInstanceBasedSelection{
 			}
 		}
 		
+		rv.setInverted(true);
 		rv.setArray(histogram);
 		vote = rv.select();
 	}
 
 	private ArrayList<Boolean> applyThreshold() throws Exception{
 		ArrayList<Boolean> selected;
-		int mean = 0;
+		ArrayList<Integer> secondHistogram = new ArrayList<Integer>();
+		int i;
+		for(i=0;i<vote.size();i++){
+			if(vote.get(i))
+				secondHistogram.add(histogram.get(i));
+			else
+				secondHistogram.add(-1);
+		}
 
-		for(Integer i : histogram){
-			mean += i;
+		int mean = 0;
+		for(Integer j : histogram){
+			mean += j;
 		}
 		mean = mean/histogram.size();
 		threshold = new Threshold<Integer>(mean);

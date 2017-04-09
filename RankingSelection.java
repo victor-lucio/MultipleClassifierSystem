@@ -9,13 +9,15 @@
 
 import java.util.*;
 
-public class RankingSelection<T extends Comparable> extends AbstractSelectionMethod<T>{
+public class RankingSelection<T extends Comparable<T>> extends GenericSelectionMethod<T>{
 
 	private int t;
 	private ArrayList<Boolean> out;
+	private Boolean invert;
 	
 	public RankingSelection(int t){
 		this.t = t;
+		invert = false;
 	}
 
 	public void setArray(ArrayList<T> array){
@@ -26,12 +28,21 @@ public class RankingSelection<T extends Comparable> extends AbstractSelectionMet
 			ranking.add(i);
 		Collections.sort(ranking, new IndexSort<T>(array));
 		if(t > ranking.size())
-			size = ranking.size();
-		for(i=0;i<t;i++){
-			out.set(ranking.get(i), true);
+			t = ranking.size();
+		if(invert){
+			for(i=0;i<t;i++){
+				out.set(ranking.get(ranking.size()-1-i), true);
+			}
+		}else{
+			for(i=0;i<t;i++){
+				out.set(ranking.get(i), true);
+			}
 		}
 	}
 
+	public void setInverted(Boolean invert){
+		this.invert = invert;
+	}
 
 	public ArrayList<Boolean> select(){
 		return out;

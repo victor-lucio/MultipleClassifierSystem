@@ -9,7 +9,7 @@
 
 import java.util.*;
 
-public class IndexSort<T extends Comparable> implements Comparator<Integer>{
+public class IndexSort<T extends Comparable<T>> implements Comparator<Integer>{
 	private ArrayList<T> array;
 
 	public IndexSort(ArrayList<T> array){

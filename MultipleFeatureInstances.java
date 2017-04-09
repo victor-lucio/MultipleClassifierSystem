@@ -15,8 +15,11 @@ public class MultipleFeatureInstances extends Instances{
 	private ArrayList<Instances> set;
 
 	public MultipleFeatureInstances(ArrayList<Instances> dataset){
-		super(dataset.get(0), 0); //vazio
-		set = dataset;
+		super(dataset.get(0));
+		set = new ArrayList<Instances>();
+		int i;
+		for(i=0;i<dataset.size();i++)
+			set.add(new Instances(dataset.get(i)));
 		feature = 0;
 	}
 	
@@ -80,7 +83,7 @@ public class MultipleFeatureInstances extends Instances{
 				return false;
 			}
 		}else{
-			return set.get(feature).add(instance);
+			return super.add(instance);
 		}
 	}
 	public void add(int index, Instance instance){
@@ -93,7 +96,7 @@ public class MultipleFeatureInstances extends Instances{
 			}else
 				System.err.println("Different number of features");
 		}else{
-			set.get(feature).add(index, instance);
+			super.add(index, instance);
 		}
 	}
 	public Attribute attribute(int index){
@@ -185,7 +188,7 @@ public class MultipleFeatureInstances extends Instances{
 		int i;
 		ArrayList<AbstractInstance> array = new ArrayList<AbstractInstance>();
 		for(i=0;i<set.size();i++){
-			array.add((AbstractInstance)set.get(i).instance(index));
+			array.add((AbstractInstance)set.get(i).instance(index).copy());
 		}
 		MultipleFeatureInstance r = new MultipleFeatureInstance(array);
 		r.selectFeature(feature);

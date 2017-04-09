@@ -15,18 +15,21 @@ public class MultipleFeatureInstance extends DenseInstance{
 	ArrayList<AbstractInstance> instanceSet;
 	int feature;
 
-	public MultipleFeatureInstance(ArrayList<AbstractInstance> instanceSet){
-		super(1);
-		this.instanceSet = instanceSet;
+	public MultipleFeatureInstance(final ArrayList<AbstractInstance> instanceSet){
+		super(instanceSet.get(0));
+		this.instanceSet = new ArrayList<AbstractInstance>();
+		int i;
+		for(i=0;i<instanceSet.size();i++)
+			this.instanceSet.add((AbstractInstance)instanceSet.get(i).copy());
 		feature = 0;
 	}
 
 	public ArrayList<AbstractInstance> toArray(){
-		return instanceSet;
+		return new ArrayList<AbstractInstance>(instanceSet);
 	}
 
 	public MultipleFeatureInstance clone(){
-		MultipleFeatureInstance copy = new MultipleFeatureInstance(instanceSet);
+		MultipleFeatureInstance copy = new MultipleFeatureInstance(new ArrayList<AbstractInstance>(instanceSet));
 		return copy;
 	}
 
@@ -55,7 +58,7 @@ public class MultipleFeatureInstance extends DenseInstance{
 	}
 
 	public java.lang.Object	copy(){
-		return instanceSet.get(feature).copy();
+		return clone();
 	}
 	public Instance	copy(double[] values){
 		return instanceSet.get(feature).copy(values);
