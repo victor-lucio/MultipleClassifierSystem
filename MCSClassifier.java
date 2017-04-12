@@ -104,14 +104,14 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 				removeptrain.setInvertSelection(true);
 				train.add(Filter.useFilter(dataset.getFeature(i), removeptrain));
 			}
-			//System.out.println(train.get(0) + "\n" + "----------\n" + train.get(0).size() + "\n");
+			//System.out.println(train.get(0) + "\n" + "----------\n");
 
 			for(i=0;i<nof;i++){
 				removepval.setInputFormat(dataset.getFeature(i));
 				removepval.setPercentage(percent);
 				validate.add(Filter.useFilter(dataset.getFeature(i), removepval));
 			}
-			//System.out.println(validate.get(0) + "\n" + "----------\n" + validate.get(0).size() );
+			//System.out.println(validate.get(0) + "\n" + "----------\n");
 		}else{
 			train = dataset.featuresToArray();
 			validate = null;
@@ -139,6 +139,8 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 			selected = selectionMethod.select();
 		}
 
+		//System.out.println(selected);
+
 		selectedNumber = 0;
 		for(i=0;i<classifiers.size();i++){
 			if(selected.get(i)){
@@ -146,6 +148,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 			}
 		}
 
+		//System.out.println(selectedNumber);
 		//montar matriz	
     	Instances validationInstances;	//validation
         if(fusionClassifier != null){
@@ -193,6 +196,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
         	fusionClassifier.buildClassifier(validationInstances);
         	//System.out.println(validationInstances);
         }
+        	//System.out.println("passou reto");
 	}
 
 	@Override
@@ -219,6 +223,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 
 			if(selected.get(i)){
 				classArray[contC] = classifiers.get(i).classifyInstance(instanceArray.get(j));
+				//System.out.println(classArray[contC] + " classificador " + i + " feature " + j);
 				contC++;
 			}
 
@@ -227,7 +232,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 	    }
 
 		if(fusionClassifier == null){ 						//majority using hashmap counting
-			
+			//System.out.println("MV");
 			HashMap<Double, Integer> map = new HashMap<Double, Integer>();
 			for(i=0;i<classArray.length;i++){
 				if(map.containsKey(classArray[i])){
@@ -249,6 +254,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
         	classVal = max;
 
 		}else{ 
+			//System.out.println("fusao");
 			DenseInstance fusionInstance = new DenseInstance(1, classArray);
 			fusionInstances = new Instances("fusion instance", attributes, 0);
 			fusionInstances.add(fusionInstance);

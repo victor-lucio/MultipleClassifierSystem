@@ -13,6 +13,7 @@ public class RankingSelection<T extends Comparable<T>> extends GenericSelectionM
 
 	private int t;
 	private ArrayList<Boolean> out;
+	private ArrayList<Integer> ranking;
 	private Boolean invert;
 	
 	public RankingSelection(int t){
@@ -21,7 +22,7 @@ public class RankingSelection<T extends Comparable<T>> extends GenericSelectionM
 	}
 
 	public void setArray(ArrayList<T> array){
-		ArrayList<Integer> ranking = new ArrayList<Integer>();
+		ranking = new ArrayList<Integer>();
 		out = new ArrayList<Boolean>(Collections.nCopies(array.size(), false));
 		int i, size;
 		for(i=0;i<array.size();i++)
@@ -29,6 +30,14 @@ public class RankingSelection<T extends Comparable<T>> extends GenericSelectionM
 		Collections.sort(ranking, new IndexSort<T>(array));
 		if(t > ranking.size())
 			t = ranking.size();
+	}
+
+	public void setInverted(Boolean invert){
+		this.invert = invert;
+	}
+
+	public ArrayList<Boolean> select(){
+		int i;
 		if(invert){
 			for(i=0;i<t;i++){
 				out.set(ranking.get(ranking.size()-1-i), true);
@@ -38,13 +47,6 @@ public class RankingSelection<T extends Comparable<T>> extends GenericSelectionM
 				out.set(ranking.get(i), true);
 			}
 		}
-	}
-
-	public void setInverted(Boolean invert){
-		this.invert = invert;
-	}
-
-	public ArrayList<Boolean> select(){
 		return out;
 	}
 }

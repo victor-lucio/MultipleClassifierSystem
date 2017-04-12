@@ -15,32 +15,34 @@ public class Concensus extends AbstractInstanceBasedSelection{
 	
 	private ArrayList<ArrayList<Boolean>> matrixV, ranking;
 	private ArrayList<ArrayList<ClassifierPairStruct>> matrixDM;
-	private ArrayList<Boolean> vote;
+	private ArrayList<Boolean> vote, selected;
 	private ArrayList<Integer> histogram;
-	private int firstFilter, secondFilter;
+	private ArrayList<Double> accuracy;
+	private int firstFilter, c;
+	private double mean;
 	private Threshold<Integer> threshold;
 
-	public Concensus(ArrayList<AbstractDiversityMeasure> dms, int firstFilter, int secondFilter){
+	public Concensus(ArrayList<AbstractDiversityMeasure> dms, int firstFilter, int c){
 		super(dms);
 		this.firstFilter = firstFilter;
-		this.secondFilter = secondFilter;
+		this.c = c;
 	}
 
 	public ArrayList<Boolean> select() throws Exception{
 		int i, j;
-		ArrayList<Boolean> selected;
 		
 		makeMatrix();
 		diversityCombination();
 		rank();
 		makeHistogram();
-		selected = applyThreshold();
 		return selected;
 	}
 
 	private void makeMatrix() throws Exception{
 		matrixV = new ArrayList<ArrayList<Boolean>>();   //inicialização da matriz
+		accuracy = new ArrayList<Double>(Collections.nCopies(classifiers.size(), 0.0));
 	    int i, contC = 0, j = 0, k;
+	    double sum = 0.0;
 
 	    baseClassifiersSize = classifiers.size()/instancesArray.size();
 	    //System.out.println(baseClassifiersSize);
@@ -49,16 +51,30 @@ public class Concensus extends AbstractInstanceBasedSelection{
 
 	    for(i=0;i<classifiers.size();i++){
 			for(k=0;k<instancesArray.get(j).size();k++){
-				if((classifiers.get(i).classifyInstance(instancesArray.get(j).instance(k))) == instancesArray.get(j).instance(k).classValue())
+				if((classifiers.get(i).classifyInstance(instancesArray.get(j).instance(k))) == instancesArray.get(j).instance(k).classValue()){
 					matrixV.get(i).add(true);
-				else{
+					accuracy.set(i, accuracy.get(i)+1);
+					//System.out.println(accuracy.get(i));
+				}else{
 					matrixV.get(i).add(false);
 				}
 			}
 
 			if((i+1) % baseClassifiersSize == 0)
 	            j++;
-	    }	    
+	    }
+
+	    //System.out.println(sum);
+	    for(i=0;i<accuracy.size();i++){
+	    	//System.out.println(accuracy.get(i) + "/" + instancesArray.get(0).size());
+	    	accuracy.set(i, (accuracy.get(i)/instancesArray.get(0).size())*100);
+	    }
+
+	    for(double a : accuracy){
+	    	sum += a;
+	    }
+
+	    mean = sum/accuracy.size();
 	}
 
 	private void diversityCombination(){
@@ -80,16 +96,21 @@ public class Concensus extends AbstractInstanceBasedSelection{
 		ranking = new ArrayList<ArrayList<Boolean>>();
 		RankingSelection<ClassifierPairStruct> rs = new RankingSelection<ClassifierPairStruct>(firstFilter);
 
+		rs.setInverted(true);
+
 		for(d=0;d<dms.size();d++){
+			//System.out.println(matrixDM.get(d));
 			rs.setArray(matrixDM.get(d));
 			ranking.add(rs.select());
+			//System.out.println(ranking.get(d));
 		}
 	}
 
 	private void makeHistogram(){
-		RankingSelection<Integer> rv = new RankingSelection<Integer>(secondFilter);
+		RankingSelection<Double> rv = new RankingSelection<Double>(c);
+		ArrayList<Double> score = new ArrayList<Double>();
 		histogram = new ArrayList<Integer>(Collections.nCopies(classifiers.size(), 0));
-		int i,j;
+		int i,j,htm; //higher than mean
 
 		for(i=0;i<dms.size();i++){
 			for(j=0;j<ranking.get(i).size();j++){
@@ -99,31 +120,25 @@ public class Concensus extends AbstractInstanceBasedSelection{
 				}
 			}
 		}
-		
+
+		//System.out.println(accuracy);
+
+		for(i=0;i<classifiers.size();i++){
+			if(accuracy.get(i) >= mean){
+				htm = 1;
+				//System.out.println(">=");
+			}else{
+				htm = 0;
+				//System.out.println("<");
+			}
+			score.add((double) ((100*histogram.get(i)*htm)+accuracy.get(i)));
+		}
+		//System.out.println(score);
+
 		rv.setInverted(true);
-		rv.setArray(histogram);
-		vote = rv.select();
-	}
+		rv.setArray(score);
 
-	private ArrayList<Boolean> applyThreshold() throws Exception{
-		ArrayList<Boolean> selected;
-		ArrayList<Integer> secondHistogram = new ArrayList<Integer>();
-		int i;
-		for(i=0;i<vote.size();i++){
-			if(vote.get(i))
-				secondHistogram.add(histogram.get(i));
-			else
-				secondHistogram.add(-1);
-		}
-
-		int mean = 0;
-		for(Integer j : histogram){
-			mean += j;
-		}
-		mean = mean/histogram.size();
-		threshold = new Threshold<Integer>(mean);
-		threshold.setArray(histogram);
-		selected = threshold.select();
-		return selected;
+		selected = rv.select();
+		//System.out.println(selected);
 	}
 }

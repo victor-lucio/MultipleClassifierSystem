@@ -59,7 +59,7 @@ public class Test{
 		dm.add(new CorrelationCoefficient());
 		dm.add(new InterraterAgreement());
 
-		Concensus con = new Concensus(dm, 5, 4);
+		Concensus con = new Concensus(dm, 50, 5);
 
 		MCSClassifier MCS = new MCSClassifier(classifiers, con, 60, (AbstractClassifier) null);
 
@@ -73,6 +73,10 @@ public class Test{
 		}
 
 		MultipleFeatureInstances testInstances = new MultipleFeatureInstances(testData);
+		
+
+		//System.out.println(MCS.classifyInstance(testInstances.instance(67)));
+
 
 		Evaluation eval = new Evaluation(instances);
 		eval.evaluateModel(MCS, testInstances);
