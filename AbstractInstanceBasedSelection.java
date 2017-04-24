@@ -14,7 +14,7 @@ import java.util.*;
 public abstract class AbstractInstanceBasedSelection extends AbstractClassifierSelection{
 
 	public int baseClassifiersSize; // baseClassifiersSize = classifiers.size()/instances.size()
-	public ArrayList<Instances> instancesArray;
+	public ArrayList<Instances> instancesArray, train;
 	public ArrayList<AbstractDiversityMeasure> dms;
 	public ArrayList<AbstractClassifier> classifiers;
 
@@ -27,11 +27,15 @@ public abstract class AbstractInstanceBasedSelection extends AbstractClassifierS
 	public abstract ArrayList<Boolean> select() throws Exception;
 
 	public void setClassifiers(ArrayList<AbstractClassifier> classifiers){
-		this.classifiers = classifiers;
+		this.classifiers = new ArrayList<AbstractClassifier>(classifiers);
 	}
 
 	public void setInstances(ArrayList<Instances> instancesArray){
-		this.instancesArray = instancesArray;
+		this.instancesArray = new ArrayList<Instances>(instancesArray);
+	}
+
+	public void setTrainingSet(ArrayList<Instances> train){ //if necessary
+		this.train = new ArrayList<Instances>(train);
 	}
 
 	public Boolean check(){

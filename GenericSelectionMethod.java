@@ -15,4 +15,16 @@ public abstract class GenericSelectionMethod<T extends Comparable> implements Se
 	
 	public abstract void setArray(ArrayList<T> array);
 
+	public ArrayList<Boolean> selectInverted(){
+		ArrayList<Boolean> s = select();
+		int i;
+		for(i=0;i<s.size();i++){
+			if(s.get(i))
+				s.set(i, false);
+			else
+				s.set(i, true);
+		}
+		return s;
+	}
+
 }

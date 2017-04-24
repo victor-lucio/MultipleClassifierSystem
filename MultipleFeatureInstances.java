@@ -39,7 +39,7 @@ public class MultipleFeatureInstances extends Instances{
 	}
 
 	public ArrayList<Instances> featuresToArray(){
-		return set;
+		return (new ArrayList<Instances>(set));
 	}
 
 	public MultipleFeatureInstances clone(){

@@ -81,11 +81,11 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
         }
 
         //randomize instances
-        for(i=0;i<dataset.numberOfFeatures();i++){
+       /* for(i=0;i<dataset.numberOfFeatures();i++){
         	dataset.selectFeature(i);
         	dataset.randomize(new Random(1));
         }
-        dataset.selectFeature(0);
+        dataset.selectFeature(0);*/
 
 		//dividir treino e validação
 		ArrayList<Instances> train, validate;
@@ -130,6 +130,8 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 			selectionMethodCasted.setClassifiers(classifiers);
 			//System.out.println(classifiers.size());
 			selectionMethodCasted.setInstances(validate);
+			//System.out.println(train);
+			selectionMethodCasted.setTrainingSet(train);
 			//System.out.println(validate.size());
 			selected = selectionMethodCasted.select();
 		}else if(selectionMethod == null){

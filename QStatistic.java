@@ -22,12 +22,10 @@ public class QStatistic extends AbstractDiversityMeasure{
 	}
 
 	public int compare(Double o1, Double o2){ //quanto menor, maior a diversidade
-		if(o1 > o2){
-			return -1;
-		}else if(o1 < o2){
-			return	1;
-		}else{
-			return 0;
-		}
+		if(Double.compare(o1, o2) == 1)
+			return(-1);
+		if(Double.compare(o1, o2) == -1)
+			return(1);
+		return(0);
 	}
 }

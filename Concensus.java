@@ -15,23 +15,24 @@ public class Concensus extends AbstractInstanceBasedSelection{
 	
 	private ArrayList<ArrayList<Boolean>> matrixV, ranking;
 	private ArrayList<ArrayList<ClassifierPairStruct>> matrixDM;
-	private ArrayList<Boolean> vote, selected;
+	private ArrayList<Boolean> selected;
 	private ArrayList<Integer> histogram;
-	private ArrayList<Double> accuracy;
+	private ArrayList<Double> secondPriority;
 	private int firstFilter, c;
-	private double mean;
 	private Threshold<Integer> threshold;
+	private AbstractSelectionMetrics metrics;
 
-	public Concensus(ArrayList<AbstractDiversityMeasure> dms, int firstFilter, int c){
+	public Concensus(ArrayList<AbstractDiversityMeasure> dms, int firstFilter, int c, 
+		AbstractSelectionMetrics metrics){
 		super(dms);
 		this.firstFilter = firstFilter;
 		this.c = c;
+		this.metrics = metrics;
 	}
 
 	public ArrayList<Boolean> select() throws Exception{
-		int i, j;
-		
 		makeMatrix();
+	    metrics.initialize(train, classifiers, instancesArray);
 		diversityCombination();
 		rank();
 		makeHistogram();
@@ -40,7 +41,7 @@ public class Concensus extends AbstractInstanceBasedSelection{
 
 	private void makeMatrix() throws Exception{
 		matrixV = new ArrayList<ArrayList<Boolean>>();   //inicialização da matriz
-		accuracy = new ArrayList<Double>(Collections.nCopies(classifiers.size(), 0.0));
+		secondPriority = new ArrayList<Double>(Collections.nCopies(classifiers.size(), 0.0));
 	    int i, contC = 0, j = 0, k;
 	    double sum = 0.0;
 
@@ -53,8 +54,6 @@ public class Concensus extends AbstractInstanceBasedSelection{
 			for(k=0;k<instancesArray.get(j).size();k++){
 				if((classifiers.get(i).classifyInstance(instancesArray.get(j).instance(k))) == instancesArray.get(j).instance(k).classValue()){
 					matrixV.get(i).add(true);
-					accuracy.set(i, accuracy.get(i)+1);
-					//System.out.println(accuracy.get(i));
 				}else{
 					matrixV.get(i).add(false);
 				}
@@ -64,17 +63,6 @@ public class Concensus extends AbstractInstanceBasedSelection{
 	            j++;
 	    }
 
-	    //System.out.println(sum);
-	    for(i=0;i<accuracy.size();i++){
-	    	//System.out.println(accuracy.get(i) + "/" + instancesArray.get(0).size());
-	    	accuracy.set(i, (accuracy.get(i)/instancesArray.get(0).size())*100);
-	    }
-
-	    for(double a : accuracy){
-	    	sum += a;
-	    }
-
-	    mean = sum/accuracy.size();
 	}
 
 	private void diversityCombination(){
@@ -99,18 +87,17 @@ public class Concensus extends AbstractInstanceBasedSelection{
 		rs.setInverted(true);
 
 		for(d=0;d<dms.size();d++){
-			//System.out.println(matrixDM.get(d));
 			rs.setArray(matrixDM.get(d));
 			ranking.add(rs.select());
-			//System.out.println(ranking.get(d));
 		}
 	}
 
-	private void makeHistogram(){
+	private void makeHistogram() throws Exception{
 		RankingSelection<Double> rv = new RankingSelection<Double>(c);
 		ArrayList<Double> score = new ArrayList<Double>();
+		ArrayList<Boolean> measureApplied = metrics.select();
 		histogram = new ArrayList<Integer>(Collections.nCopies(classifiers.size(), 0));
-		int i,j,htm; //higher than mean
+		int i,j,m;
 
 		for(i=0;i<dms.size();i++){
 			for(j=0;j<ranking.get(i).size();j++){
@@ -121,17 +108,16 @@ public class Concensus extends AbstractInstanceBasedSelection{
 			}
 		}
 
-		//System.out.println(accuracy);
 
 		for(i=0;i<classifiers.size();i++){
-			if(accuracy.get(i) >= mean){
-				htm = 1;
+			if(measureApplied.get(i)){
+				m = 1;
 				//System.out.println(">=");
 			}else{
-				htm = 0;
+				m = 0;
 				//System.out.println("<");
 			}
-			score.add((double) ((100*histogram.get(i)*htm)+accuracy.get(i)));
+			score.add((double) ((100*histogram.get(i)*m)+secondPriority.get(i)));
 		}
 		//System.out.println(score);
 
