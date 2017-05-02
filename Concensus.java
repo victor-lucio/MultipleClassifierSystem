@@ -41,7 +41,6 @@ public class Concensus extends AbstractInstanceBasedSelection{
 
 	private void makeMatrix() throws Exception{
 		matrixV = new ArrayList<ArrayList<Boolean>>();   //inicialização da matriz
-		secondPriority = new ArrayList<Double>(Collections.nCopies(classifiers.size(), 0.0));
 	    int i, contC = 0, j = 0, k;
 	    double sum = 0.0;
 
@@ -96,6 +95,7 @@ public class Concensus extends AbstractInstanceBasedSelection{
 		RankingSelection<Double> rv = new RankingSelection<Double>(c);
 		ArrayList<Double> score = new ArrayList<Double>();
 		ArrayList<Boolean> measureApplied = metrics.select();
+		secondPriority = metrics.getMeasures();
 		histogram = new ArrayList<Integer>(Collections.nCopies(classifiers.size(), 0));
 		int i,j,m;
 
@@ -108,7 +108,8 @@ public class Concensus extends AbstractInstanceBasedSelection{
 			}
 		}
 
-
+		//System.out.println("8: " + histogram.get(8) + "\n" + histogram);
+		//System.out.println(secondPriority);
 		for(i=0;i<classifiers.size();i++){
 			if(measureApplied.get(i)){
 				m = 1;
@@ -117,7 +118,7 @@ public class Concensus extends AbstractInstanceBasedSelection{
 				m = 0;
 				//System.out.println("<");
 			}
-			score.add((double) ((100*histogram.get(i)*m)+secondPriority.get(i)));
+			score.add((double) ((100*histogram.get(i)*m) + secondPriority.get(i)));
 		}
 		//System.out.println(score);
 
@@ -125,6 +126,6 @@ public class Concensus extends AbstractInstanceBasedSelection{
 		rv.setArray(score);
 
 		selected = rv.select();
-		//System.out.println(selected);
+		System.out.println(selected);
 	}
 }

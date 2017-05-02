@@ -34,6 +34,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
     private ArrayList<Attribute> attributes;
     private ArrayList<Boolean> selected;
     private ArrayList<AbstractClassifier> selectedClassifiers;
+    private ArrayList<Instances> validate;
 
 	public MCSClassifier(ArrayList<AbstractClassifier> classifiers, AbstractClassifierSelection selectionMethod,
 						 int validationPercentage, AbstractClassifier fusionClassifier) throws Exception{
@@ -81,14 +82,14 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
         }
 
         //randomize instances
-       /* for(i=0;i<dataset.numberOfFeatures();i++){
+        /*for(i=0;i<dataset.numberOfFeatures();i++){
         	dataset.selectFeature(i);
         	dataset.randomize(new Random(1));
         }
         dataset.selectFeature(0);*/
 
 		//dividir treino e validação
-		ArrayList<Instances> train, validate;
+		ArrayList<Instances> train;
 
 		if(fusionClassifier != null || (selectionMethod instanceof AbstractInstanceBasedSelection)){
 
@@ -134,6 +135,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 			selectionMethodCasted.setTrainingSet(train);
 			//System.out.println(validate.size());
 			selected = selectionMethodCasted.select();
+			//System.out.println(selected);
 		}else if(selectionMethod == null){
 			selected = new ArrayList<Boolean>(Collections.nCopies(classifiers.size(), true));
 		}else{
@@ -173,6 +175,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 				if((i+1) % numberClassifiers == 0)
 	                j++;
 	        }
+	        //System.out.println(matrixV);
 
 	        // criando instancias para treinar o segundo classificador
 	        double[] instanceValue;
@@ -180,23 +183,22 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
     		instanceValue = new double[selectedNumber + 1];
     		for(i=0;i<classifiers.size();i++)
     			if(selected.get(i))
-	    			attributes.add(new Attribute("classifier "+i));
+	    			attributes.add(validate.get(0).classAttribute().copy("classifier " + i));
 	    	attributes.add(validate.get(0).classAttribute());
 	    	validationInstances = new Instances("validation dataset", attributes, matrixV.get(0).size());
 
 	    	DenseInstance inst;
     		for(i=0;i<matrixV.get(0).size();i++){
     			inst = new DenseInstance(selectedNumber + 1);
-	        	for(j=0;j<selectedNumber;j++){ //Are numerical
-	    			inst.setValue(j, matrixV.get(j).get(i));
+    			validationInstances.add(inst);
+	        	for(j=0;j<selectedNumber;j++){ //not numeral anymore
+	    			validationInstances.get(i).setValue(j, validate.get(0).classAttribute().value(matrixV.get(j).get(i).intValue()));
 	        	}
-	        	inst.setValue(j, validate.get(0).instance(i).classValue()); //classvalue of each instance
-	        	validationInstances.add(inst);
-	        	inst = null;
+	        	validationInstances.get(i).setValue(j, validate.get(0).instance(i).classValue()); //classvalue of each instance
 	        }
         	validationInstances.setClassIndex(validationInstances.numAttributes()-1);
         	fusionClassifier.buildClassifier(validationInstances);
-        	//System.out.println(validationInstances);
+        	//System.out.println(validationInstances + "\n" + validationInstances.size());
         }
         	//System.out.println("passou reto");
 	}
@@ -207,7 +209,7 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 		MultipleFeatureInstance multiInst;
 		double classVal = 0; // representação da predição em forma de double
 		ArrayList<AbstractInstance> instanceArray;
-		double classArray[] = new double[selectedNumber + 1];
+		Double classArray[] = new Double[selectedNumber + 1];
 		int i, j, k = 0, contC;
 		Instances fusionInstances;
 
@@ -257,11 +259,20 @@ public class MCSClassifier extends MultipleClassifiersCombiner{
 
 		}else{ 
 			//System.out.println("fusao");
-			DenseInstance fusionInstance = new DenseInstance(1, classArray);
-			fusionInstances = new Instances("fusion instance", attributes, 0);
+			fusionInstances = new Instances("fusion instance", attributes, 1);
+			DenseInstance fusionInstance = new DenseInstance(selectedNumber);
 			fusionInstances.add(fusionInstance);
+			//System.out.print(fusionInstances.get(0));
+			for(i=0;i<selectedNumber;i++){
+				fusionInstances.get(0).setValue(i, validate.get(0).classAttribute().value(classArray[i].intValue()));
+				//System.out.print(classArray[i]);
+			}
+			//System.out.print("saiu");
+			
 			fusionInstances.setClassIndex(fusionInstance.numAttributes()-1);
+			//fusionInstances.instance(0).setClassMissing();
 			classVal = fusionClassifier.classifyInstance(fusionInstances.instance(0));
+			//System.out.println(" Classval: " + classVal);
 			fusionInstances = null;
 			fusionInstance = null;
 		}

@@ -1,0 +1,127 @@
+/* 
+	@author Victor Lúcio
+	Federal University of São Paulo - ICT/UNIFESP
+	"A Classifiers Fusion System Applied to Fenology"
+
+	Multiple Classifier System
+	from: Faria, Fabio "A Framework for Pattern Classifier Selection and Fusion", 2014
+*/
+
+import weka.classifiers.*;
+import weka.classifiers.lazy.*;
+import weka.classifiers.trees.*;
+import weka.classifiers.bayes.*;
+import weka.core.*;
+import java.util.*;
+import java.io.*;
+import weka.core.converters.ArffSaver;
+import weka.core.converters.ConverterUtils.DataSource;
+import weka.core.converters.*;
+import weka.classifiers.functions.SMO;
+
+public class Experimento{
+	public static void main(String args[]) throws Exception{
+		int k, m, n;
+		DataSource source;
+		Scanner tec = new Scanner(System.in);
+		String pathname = new String("data/");
+		ArrayList<ArrayList<String>> test = new ArrayList<ArrayList<String>>(), train = new ArrayList<ArrayList<String>>();
+		ArrayList<ArrayList<Instances>> trainInst = new ArrayList<ArrayList<Instances>>(), testInst = new ArrayList<ArrayList<Instances>>();
+		File path = new File(pathname);
+		File[] fold, folder, feat = path.listFiles();
+		for(File i : feat){
+			if(i.getPath().equals("data\\new_feat_tes")){
+				k=0;
+				folder = i.listFiles();
+				Arrays.sort(folder);
+				for(File l : folder){
+					test.add(new ArrayList<String>());
+					fold = l.listFiles();
+					Arrays.sort(fold);
+					for(File j : fold){
+						test.get(k).add(j.getPath());
+					}
+					k++;
+				}
+			}else if(i.isDirectory()){
+				k=0;
+				folder = i.listFiles();
+				Arrays.sort(folder);
+				for(File l : folder){
+					train.add(new ArrayList<String>());
+					fold = l.listFiles();
+					Arrays.sort(fold);
+					for(File j : fold){
+						train.get(k).add(j.getPath());
+					}
+					k++;
+				}
+			}
+		}
+		for(n=0;n<train.get(0).size();n++){
+			//System.out.println(n + " - train");
+			trainInst.add(new ArrayList<Instances>());
+			for(m=0;m<train.size();m++){
+				source = new DataSource(train.get(m).get(n));
+				trainInst.get(n).add(source.getDataSet());
+				trainInst.get(n).get(m).setClassIndex(trainInst.get(n).get(m).numAttributes()-1);
+				trainInst.get(n).get(m).deleteAttributeAt(trainInst.get(n).get(m).numAttributes()-2);
+				source = null;
+			}
+		}
+		for(n=0;n<test.get(0).size();n++){
+			//System.out.println(n + " - test");
+			testInst.add(new ArrayList<Instances>());
+			for(m=0;m<test.size();m++){
+				source = new DataSource(test.get(m).get(n));
+				testInst.get(n).add(source.getDataSet());
+				testInst.get(n).get(m).setClassIndex(testInst.get(n).get(m).numAttributes()-1);
+				testInst.get(n).get(m).deleteAttributeAt(testInst.get(n).get(m).numAttributes()-2);
+				source = null;
+			}
+		}
+		
+		ArrayList<MultipleFeatureInstances> trainArray = new ArrayList<MultipleFeatureInstances>();
+		ArrayList<MultipleFeatureInstances> testArray = new ArrayList<MultipleFeatureInstances>();
+		for(n=0;n<trainInst.size();n++){
+			trainArray.add(new MultipleFeatureInstances(trainInst.get(n)));
+			testArray.add(new MultipleFeatureInstances(testInst.get(n)));
+		}
+
+		ArrayList<AbstractClassifier> classifiers = new ArrayList<AbstractClassifier>();
+		classifiers.add(new IBk());
+
+ 		ArrayList<AbstractDiversityMeasure> dm = new ArrayList<AbstractDiversityMeasure>();
+		dm.add(new QStatistic());
+		dm.add(new DoubleFaultMeasure());
+		dm.add(new DisagreementMeasure());
+		dm.add(new CorrelationCoefficient());
+		dm.add(new InterraterAgreement());
+
+		AverageAccuracyMean metrics = new AverageAccuracyMean();
+
+		int x = tec.nextInt();
+		Concensus con = new Concensus(dm, 100, x, metrics);
+
+		MCSClassifier MCS;
+		Evaluation eval;
+		SMO svm = new SMO();
+		
+		n=tec.nextInt();
+		MCS = new MCSClassifier(classifiers, con, 75, svm);
+		MCS.buildClassifier(trainArray.get(n));
+		eval = new Evaluation(trainArray.get(n));
+		eval.evaluateModel(MCS, testArray.get(n));
+		System.out.println(eval.toSummaryString());
+		Double specificity, sensitivity, r=0.0;
+		int i, nc = testArray.get(n).numClasses();
+		
+		Double avg_acc=0.0;
+		for(i=0;i<nc;i++)
+			avg_acc += (eval.numTruePositives(i)/(eval.numTruePositives(i)+eval.numFalseNegatives(i)));
+		avg_acc /= nc;
+		avg_acc *= 100;	
+
+		System.out.println("average " + avg_acc);
+	}
+}
