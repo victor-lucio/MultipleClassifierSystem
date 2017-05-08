@@ -5,6 +5,9 @@
 
 	Multiple Classifier System
 	from: Faria, Fabio "A Framework for Pattern Classifier Selection and Fusion", 2014
+
+	Advisors: Jurandy Gomes de Almeida Junior <http://buscatextual.cnpq.br/buscatextual/visualizacv.do?id=K4736755E0>
+			  Fabio Augusto Faria <http://buscatextual.cnpq.br/buscatextual/visualizacv.do?id=K4266712J6>
 */
 
 import weka.classifiers.*;
@@ -30,7 +33,7 @@ public class Experimento{
 		File path = new File(pathname);
 		File[] fold, folder, feat = path.listFiles();
 		for(File i : feat){
-			if(i.getPath().equals("data\\new_feat_tes")){
+			if(i.getPath().equals("data" + File.separator + "new_feat_tes")){
 				k=0;
 				folder = i.listFiles();
 				Arrays.sort(folder);
@@ -109,9 +112,21 @@ public class Experimento{
 		
 		n=tec.nextInt();
 		MCS = new MCSClassifier(classifiers, con, 75, svm);
+		
+		long startTime1 = System.currentTimeMillis();
+		long startTime2 = System.currentTimeMillis();
+
 		MCS.buildClassifier(trainArray.get(n));
+		
+		long stopTime1 = System.currentTimeMillis();
+
 		eval = new Evaluation(trainArray.get(n));
 		eval.evaluateModel(MCS, testArray.get(n));
+
+		long stopTime2 = System.currentTimeMillis();
+      	long elapsedTime1 = stopTime1 - startTime1;
+      	long elapsedTime2 = stopTime2 - startTime2;
+
 		System.out.println(eval.toSummaryString());
 		Double specificity, sensitivity, r=0.0;
 		int i, nc = testArray.get(n).numClasses();
@@ -122,6 +137,8 @@ public class Experimento{
 		avg_acc /= nc;
 		avg_acc *= 100;	
 
-		System.out.println("average " + avg_acc);
+		System.out.println("tempo treino: "+ elapsedTime1/1000.00 + " segundos");
+		System.out.println("tempo teste: "+ elapsedTime2/1000.00 + " segundos");
+		System.out.println("average: " + avg_acc);
 	}
 }

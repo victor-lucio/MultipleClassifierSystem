@@ -1,0 +1,1 @@
+java -Xmx2500m -cp "lib/*;" Experimento

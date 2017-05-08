@@ -1,0 +1,1 @@
+javac -Xlint -nowarn -classpath "lib/*;" *.java
