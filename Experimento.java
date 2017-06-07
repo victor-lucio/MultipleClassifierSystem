@@ -12,87 +12,59 @@
 
 import weka.classifiers.*;
 import weka.classifiers.lazy.*;
-import weka.classifiers.trees.*;
-import weka.classifiers.bayes.*;
+import weka.core.converters.*;
+import weka.classifiers.functions.*;
+import weka.core.converters.ConverterUtils.DataSource;
 import weka.core.*;
 import java.util.*;
 import java.io.*;
-import weka.core.converters.ArffSaver;
-import weka.core.converters.ConverterUtils.DataSource;
-import weka.core.converters.*;
-import weka.classifiers.functions.SMO;
 
 public class Experimento{
 	public static void main(String args[]) throws Exception{
-		int k, m, n;
+		int m;
 		DataSource source;
-		Scanner tec = new Scanner(System.in);
-		String pathname = new String("data/");
-		ArrayList<ArrayList<String>> test = new ArrayList<ArrayList<String>>(), train = new ArrayList<ArrayList<String>>();
-		ArrayList<ArrayList<Instances>> trainInst = new ArrayList<ArrayList<Instances>>(), testInst = new ArrayList<ArrayList<Instances>>();
-		File path = new File(pathname);
-		File[] fold, folder, feat = path.listFiles();
-		for(File i : feat){
-			if(i.getPath().equals("data" + File.separator + "new_feat_tes")){
-				k=0;
-				folder = i.listFiles();
-				Arrays.sort(folder);
-				for(File l : folder){
-					test.add(new ArrayList<String>());
-					fold = l.listFiles();
-					Arrays.sort(fold);
-					for(File j : fold){
-						test.get(k).add(j.getPath());
-					}
-					k++;
-				}
-			}else if(i.isDirectory()){
-				k=0;
-				folder = i.listFiles();
-				Arrays.sort(folder);
-				for(File l : folder){
-					train.add(new ArrayList<String>());
-					fold = l.listFiles();
-					Arrays.sort(fold);
-					for(File j : fold){
-						train.get(k).add(j.getPath());
-					}
-					k++;
-				}
-			}
-		}
-		for(n=0;n<train.get(0).size();n++){
-			//System.out.println(n + " - train");
-			trainInst.add(new ArrayList<Instances>());
-			for(m=0;m<train.size();m++){
-				source = new DataSource(train.get(m).get(n));
-				trainInst.get(n).add(source.getDataSet());
-				trainInst.get(n).get(m).setClassIndex(trainInst.get(n).get(m).numAttributes()-1);
-				trainInst.get(n).get(m).deleteAttributeAt(trainInst.get(n).get(m).numAttributes()-2);
-				source = null;
-			}
-		}
-		for(n=0;n<test.get(0).size();n++){
-			//System.out.println(n + " - test");
-			testInst.add(new ArrayList<Instances>());
-			for(m=0;m<test.size();m++){
-				source = new DataSource(test.get(m).get(n));
-				testInst.get(n).add(source.getDataSet());
-				testInst.get(n).get(m).setClassIndex(testInst.get(n).get(m).numAttributes()-1);
-				testInst.get(n).get(m).deleteAttributeAt(testInst.get(n).get(m).numAttributes()-2);
-				source = null;
-			}
-		}
-		
-		ArrayList<MultipleFeatureInstances> trainArray = new ArrayList<MultipleFeatureInstances>();
-		ArrayList<MultipleFeatureInstances> testArray = new ArrayList<MultipleFeatureInstances>();
-		for(n=0;n<trainInst.size();n++){
-			trainArray.add(new MultipleFeatureInstances(trainInst.get(n)));
-			testArray.add(new MultipleFeatureInstances(testInst.get(n)));
+
+		ArrayList<String> test = new ArrayList<String>();
+		ArrayList<String> train = new ArrayList<String>();
+		ArrayList<Instances> trainInst = new ArrayList<Instances>();
+		ArrayList<Instances> testInst = new ArrayList<Instances>();
+
+		File path1 = new File("data" + File.separator + "teste");
+		File path2 = new File("data" + File.separator + "treino");
+		File[] folder;
+
+
+		folder = path1.listFiles();
+		Arrays.sort(folder);
+		for(File l : folder){
+			test.add(l.getPath());
 		}
 
+		folder = path2.listFiles();
+		Arrays.sort(folder);
+		for(File l : folder){
+			train.add(l.getPath());
+		}
+
+		for(m=0;m<train.size();m++){
+			source = new DataSource(train.get(m));
+			trainInst.add(source.getDataSet());
+			trainInst.get(m).setClassIndex(trainInst.get(m).numAttributes()-1);
+			trainInst.get(m).deleteAttributeAt(trainInst.get(m).numAttributes()-2);
+		}
+
+		for(m=0;m<test.size();m++){
+			source = new DataSource(test.get(m));
+			testInst.add(source.getDataSet());
+			testInst.get(m).setClassIndex(testInst.get(m).numAttributes()-1);
+			testInst.get(m).deleteAttributeAt(testInst.get(m).numAttributes()-2);
+		}
+
+		MultipleFeatureInstances treino = new MultipleFeatureInstances(trainInst);
+		MultipleFeatureInstances teste = new MultipleFeatureInstances(testInst);
+
 		ArrayList<AbstractClassifier> classifiers = new ArrayList<AbstractClassifier>();
-		classifiers.add(new IBk());
+		classifiers.add(new IBk()); // kNN
 
  		ArrayList<AbstractDiversityMeasure> dm = new ArrayList<AbstractDiversityMeasure>();
 		dm.add(new QStatistic());
@@ -103,42 +75,19 @@ public class Experimento{
 
 		AverageAccuracyMean metrics = new AverageAccuracyMean();
 
-		int x = tec.nextInt();
-		Concensus con = new Concensus(dm, 100, x, metrics);
+		Concensus concensus = new Concensus(dm, 100, 6, metrics);
+		// Concensus(medidas de diversidade, parametro t, parametro c*, classe de metricas)
 
 		MCSClassifier MCS;
+		
+		SMO svm = new SMO(); // SVM
+
+		MCS = new MCSClassifier(classifiers, concensus, 75, svm); // MCSClassifier(Classificadores, Seleção, divisão treino/validação, Classificador de Fusão)
+		MCS.buildClassifier(treino);
+
 		Evaluation eval;
-		SMO svm = new SMO();
-		
-		n=tec.nextInt();
-		MCS = new MCSClassifier(classifiers, con, 75, svm);
-		
-		long startTime1 = System.currentTimeMillis();
-		long startTime2 = System.currentTimeMillis();
-
-		MCS.buildClassifier(trainArray.get(n));
-		
-		long stopTime1 = System.currentTimeMillis();
-
-		eval = new Evaluation(trainArray.get(n));
-		eval.evaluateModel(MCS, testArray.get(n));
-
-		long stopTime2 = System.currentTimeMillis();
-      	long elapsedTime1 = stopTime1 - startTime1;
-      	long elapsedTime2 = stopTime2 - startTime2;
-
+		eval = new Evaluation(treino);
+		eval.evaluateModel(MCS, teste);
 		System.out.println(eval.toSummaryString());
-		Double specificity, sensitivity, r=0.0;
-		int i, nc = testArray.get(n).numClasses();
-		
-		Double avg_acc=0.0;
-		for(i=0;i<nc;i++)
-			avg_acc += (eval.numTruePositives(i)/(eval.numTruePositives(i)+eval.numFalseNegatives(i)));
-		avg_acc /= nc;
-		avg_acc *= 100;	
-
-		System.out.println("tempo treino: "+ elapsedTime1/1000.00 + " segundos");
-		System.out.println("tempo teste: "+ elapsedTime2/1000.00 + " segundos");
-		System.out.println("average: " + avg_acc);
 	}
 }

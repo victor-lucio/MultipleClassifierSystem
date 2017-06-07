@@ -111,8 +111,8 @@ public class Concensus extends AbstractInstanceBasedSelection{
 			}
 		}
 
-		//System.out.println("8: " + histogram.get(8) + "\n" + histogram);
-		//System.out.println(secondPriority);
+		//System.out.println("Histogram " + histogram);
+		//System.out.println("AverageAcuracyMean " + secondPriority);
 		for(i=0;i<classifiers.size();i++){
 			if(measureApplied.get(i)){
 				m = 1;
