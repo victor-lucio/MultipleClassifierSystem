@@ -12,8 +12,9 @@
 
 import java.util.*;
 import java.lang.*;
+import java.io.*;
 
-public class ClassifierPairStruct implements Comparable<ClassifierPairStruct>{
+public class ClassifierPairStruct implements Comparable<ClassifierPairStruct>, Serializable{
 
 	public Comparator<Double> comp;
 	public double dmv; //diversity measure value

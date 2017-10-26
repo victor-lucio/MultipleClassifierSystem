@@ -13,9 +13,10 @@
 import weka.classifiers.*;
 import weka.core.*;
 import java.util.*;
+import java.io.*;
 
 
-public abstract class AbstractSelectionMetrics implements SelectionMethod{
+public abstract class AbstractSelectionMetrics implements SelectionMethod, Serializable{
 
 	private ArrayList<Double> measures;
 	private ArrayList<Instances> train, test;

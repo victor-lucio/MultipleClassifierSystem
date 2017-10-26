@@ -13,6 +13,7 @@
 import weka.classifiers.*;
 import weka.core.*;
 import java.util.*;
+import java.io.*;
 
 public class Concensus extends AbstractInstanceBasedSelection{
 	

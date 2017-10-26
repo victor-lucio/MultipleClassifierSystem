@@ -1,14 +1,3 @@
-/* 
-	@author Victor Lúcio
-	Federal University of São Paulo - ICT/UNIFESP
-	"A Classifiers Fusion System Applied to Fenology"
-
-	Multiple Classifier System
-	from: Faria, Fabio "A Framework for Pattern Classifier Selection and Fusion", 2014
-
-	Advisors: Jurandy Gomes de Almeida Junior <http://buscatextual.cnpq.br/buscatextual/visualizacv.do?id=K4736755E0>
-			  Fabio Augusto Faria <http://buscatextual.cnpq.br/buscatextual/visualizacv.do?id=K4266712J6>
-*/
 
 import weka.classifiers.*;
 import weka.classifiers.lazy.*;
@@ -19,7 +8,7 @@ import weka.core.*;
 import java.util.*;
 import java.io.*;
 
-public class Experimento{
+public class Experimento2{
 	public static void main(String args[]) throws Exception{
 		int m;
 		DataSource source;
@@ -63,36 +52,13 @@ public class Experimento{
 		MultipleFeatureInstances treino = new MultipleFeatureInstances(trainInst);
 		MultipleFeatureInstances teste = new MultipleFeatureInstances(testInst);
 
-		ArrayList<AbstractClassifier> classifiers = new ArrayList<AbstractClassifier>();
-		classifiers.add(new IBk()); // kNN
+		ObjectInputStream ois = new ObjectInputStream(new FileInputStream("mcs.model"));
+ 		MCSClassifier cls = (MCSClassifier) ois.readObject();
+ 		ois.close();
 
- 		ArrayList<AbstractDiversityMeasure> dm = new ArrayList<AbstractDiversityMeasure>();
-		dm.add(new QStatistic());
-		dm.add(new DoubleFaultMeasure());
-		dm.add(new DisagreementMeasure());
-		dm.add(new CorrelationCoefficient());
-		dm.add(new InterraterAgreement());
-
-		AverageAccuracyMean metrics = new AverageAccuracyMean();
-
-		Concensus concensus = new Concensus(dm, 100, 6, metrics);
-		// Concensus(medidas de diversidade, parametro t, parametro c*, classe de metricas)
-
-		MCSClassifier MCS;
-		
-		SMO svm = new SMO(); // SVM
-
-		MCS = new MCSClassifier(classifiers, concensus, 75, svm); // MCSClassifier(Classificadores, Seleção, divisão treino/validação, Classificador de Fusão)
-		MCS.buildClassifier(treino);
-
-		ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("mcs.model"));
-		oos.writeObject(MCS);
-		oos.flush();
-		oos.close();
-
-		/*Evaluation eval;
+ 		Evaluation eval;
 		eval = new Evaluation(treino);
-		eval.evaluateModel(MCS, teste);
-		System.out.println(eval.toSummaryString());*/
+		eval.evaluateModel(cls, teste);
+		System.out.println(eval.toSummaryString());
 	}
 }

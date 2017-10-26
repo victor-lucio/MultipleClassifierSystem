@@ -11,8 +11,9 @@
 */
 
 import java.util.*;
+import java.io.*;
 
-public abstract class AbstractDiversityMeasure implements Comparator<Double>{
+public abstract class AbstractDiversityMeasure implements Comparator<Double>, Serializable{
 
 	public abstract double measure(ArrayList<Boolean> c1, ArrayList<Boolean> c2);
 	public abstract int compare(Double o1, Double o2);

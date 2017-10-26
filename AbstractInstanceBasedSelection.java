@@ -13,8 +13,9 @@
 import weka.classifiers.*;
 import weka.core.*;
 import java.util.*;
+import java.io.*;
 
-public abstract class AbstractInstanceBasedSelection extends AbstractClassifierSelection{
+public abstract class AbstractInstanceBasedSelection extends AbstractClassifierSelection implements Serializable{
 
 	public int baseClassifiersSize; // baseClassifiersSize = classifiers.size()/instances.size()
 	public ArrayList<Instances> instancesArray, train;
